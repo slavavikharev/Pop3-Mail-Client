@@ -1,9 +1,11 @@
+import sys
 import socket
 import ssl
 import getpass
 import email
 import base64
 import quopri
+import argparse
 
 CR = b'\r'
 LF = b'\n'
@@ -18,6 +20,8 @@ MAIL_LIST = {
     'gmail.com': ('pop.gmail.com', 995),
     'yahoo.com': ('pop.mail.yahoo.com', 995)
 }
+
+__all__ = ['Pop3', 'Mail']
 
 
 class Pop3:
@@ -149,9 +153,8 @@ class Pop3:
             if sock is not None:
                 try:
                     sock.shutdown(socket.SHUT_RDWR)
-                except OSError as e:
-                    if e.errno != e.errno.ENOTCONN:
-                        return
+                except OSError:
+                    return
                 finally:
                     sock.close()
 
@@ -163,11 +166,12 @@ class Pop3:
 
 
 class Mail:
-    def __init__(self, message):
+    def __init__(self, message, html=False):
         """
         :type message: bytes
         """
         self.message = email.message_from_bytes(message)
+        self.html = html
 
     def get_headers(self, *headers):
         """
@@ -203,6 +207,9 @@ class Mail:
         if content_maintype == 'multipart':
             return '\n'.join(self.get_message(msg_part)
                              for msg_part in message.get_payload())
+        content_subtype = message.get_content_subtype()
+        if content_subtype == 'html' and not self.html:
+            return ''
         payload = message.get_payload()
         encoding = message.get('Content-Transfer-Encoding')
         charset = message.get_content_charset() or 'utf-8'
@@ -221,6 +228,8 @@ def connect():
     and password are correct
     """
     email_address = input('Input your email:\n')
+    if email_address == 'quit':
+        sys.exit()
     password = getpass.getpass('Input your password:\n')
 
     address_parts = email_address.split('@')
@@ -240,6 +249,13 @@ def connect():
         return connection
     except ConnectionError as e:
         print(e)
+
+
+def reconnect():
+    connection = connect()
+    while connection is None:
+        connection = connect()
+    return connection
 
 
 def get_mail_number(user_input, msg_count):
@@ -262,9 +278,12 @@ def get_mail_number(user_input, msg_count):
 
 
 def main():
-    connection = connect()
-    while connection is None:
-        connection = connect()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-l', '--html', action='store_true',
+                        help='Output html content')
+    args = parser.parse_args()
+
+    connection = reconnect()
 
     print('Connected.')
     msg_count = int(connection.stat().decode().split()[1])
@@ -282,19 +301,28 @@ def main():
         if mail_number is None:
             continue
 
-        mail = Mail(b'\n'.join(connection.retr(mail_number)[1]))
+        try:
+            data = b'\n'.join(connection.retr(mail_number)[1])
+            mail = Mail(data, args.html)
+        except EOFError:
+            print('Probably the connection is closed')
+            print('Try to login again')
+            connection = reconnect()
+            continue
 
         print('=' * 50)
         for header in mail.get_headers('Date', 'From', 'To', 'Subject'):
             print(header[0] + ':')
             print('\t' + header[1])
+        message_lines = mail.get_message().split('\n')
+        if not message_lines:
+            continue
         print('Message:')
-        for msg_line in mail.get_message().split('\n'):
-            print('\t' + msg_line)
+        for message_line in message_lines:
+            print('\t' + message_line)
         print('=' * 50)
 
     connection.quit()
-
 
 if __name__ == '__main__':
     main()
