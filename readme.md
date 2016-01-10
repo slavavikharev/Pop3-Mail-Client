@@ -5,13 +5,21 @@ What is it?
 -----------
 pop3 - приложение для просмотра входящих сообщений
 
+Supported servers
+-----------------
++ GMail
++ Yandex.Mail
++ Mail.ru
++ Yahoo.com
+
 How to run?
 -----------
 ./pop3.py [options]
 
 Options
 -------
-+ -l --html - Выводить html контент, если есть
++ -s --save - сохранять файлы из письма
++ -h --help - страница справки
 
 Author
 ------
