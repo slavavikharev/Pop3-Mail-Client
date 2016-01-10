@@ -3,6 +3,7 @@ import socket
 import ssl
 import getpass
 import email
+from email import message as mmmsg
 import base64
 import quopri
 import argparse
@@ -203,20 +204,43 @@ class Mail:
         """
         if message is None:
             message = self.message
-        content_maintype = message.get_content_maintype()
-        if content_maintype == 'multipart':
-            return '\n'.join(self.get_message(msg_part)
-                             for msg_part in message.get_payload())
-        content_subtype = message.get_content_subtype()
-        if content_subtype == 'html' and not self.html:
-            return ''
+
         payload = message.get_payload()
         encoding = message.get('Content-Transfer-Encoding')
         charset = message.get_content_charset() or 'utf-8'
+        decoded_payload = self.get_decoded_payload(payload, encoding)
+
+        content_maintype = message.get_content_maintype()
+        content_subtype = message.get_content_subtype()
+
+        if content_maintype == 'multipart':
+            return '\n'.join(self.get_message(msg_part)
+                             for msg_part in payload)
+        if content_maintype == 'application':
+            filename = message.get_filename()
+            with open(filename, 'wb') as f:
+                f.write(decoded_payload)
+            return 'File %s saved into current directory' % filename
+
+        if content_subtype == 'html' and not self.html:
+            return ''
+
+        if isinstance(decoded_payload, bytes):
+            return decoded_payload.decode(charset)
+        return decoded_payload
+
+    @staticmethod
+    def get_decoded_payload(payload, encoding):
+        """
+        Decodes payload with encoding
+        Returns decoded
+        :param payload:
+        :param encoding:
+        """
         if encoding == 'base64':
-            return base64.b64decode(payload).decode(charset)
+            return base64.b64decode(payload)
         elif encoding == 'quoted-printable':
-            return quopri.decodestring(payload).decode(charset)
+            return quopri.decodestring(payload)
         else:
             return payload
 
@@ -303,7 +327,7 @@ def main():
 
         try:
             data = b'\n'.join(connection.retr(mail_number)[1])
-            mail = Mail(data, args.html)
+            mail = Mail(data, True)
         except EOFError:
             print('Probably the connection is closed')
             print('Try to login again')
