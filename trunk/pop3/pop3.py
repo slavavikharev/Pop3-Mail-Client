@@ -243,12 +243,30 @@ class Mail:
         :param encoding:
         :param charset:
         """
-        if encoding == 'base64':
+        if encoding.lower() == 'base64':
             return base64.b64decode(payload)
-        elif encoding == 'quoted-printable':
+        elif encoding.lower() == 'quoted-printable':
             return quopri.decodestring(payload)
         else:
             return payload.encode(charset)
+
+
+def check_address(address_parts):
+    """
+    Checks if the address is good
+    And if the domain in supported servers
+
+    :param address_parts:
+    """
+    if len(address_parts) != 2 or '.' not in address_parts[-1]:
+        print('Email address is not correct')
+        return False
+
+    if address_parts[-1] not in MAIL_LIST:
+        print('This mail server is not supporting yet')
+        return False
+
+    return True
 
 
 def connect():
@@ -263,17 +281,12 @@ def connect():
     password = getpass.getpass('Input your password:\n')
 
     address_parts = email_address.split('@')
-    if len(address_parts) != 2 or '.' not in address_parts[-1]:
-        print('Email address is not correct')
-        return None
 
-    domain = address_parts[-1]
-    if domain not in MAIL_LIST:
-        print('This mail server is not supporting yet')
+    if not check_address(address_parts):
         return None
 
     try:
-        connection = Pop3(*MAIL_LIST[domain])
+        connection = Pop3(*MAIL_LIST[address_parts[-1]])
         connection.user(email_address)
         connection.pass_(password)
         return connection
@@ -288,7 +301,7 @@ def reconnect():
     return connection
 
 
-def get_mail_number(user_input, msg_count):
+def check_mail_number(user_input, msg_count):
     """
     Checks whether user_input is correct;
     Returns int(user_input) if it is else None
@@ -326,7 +339,7 @@ def main():
         if user_input == 'quit':
             break
 
-        mail_number = get_mail_number(user_input, msg_count)
+        mail_number = check_mail_number(user_input, msg_count)
 
         if mail_number is None:
             continue

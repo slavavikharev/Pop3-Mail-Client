@@ -1,0 +1,23 @@
+From: Slava Vikharev
+To: =?koi8-r?B?88zB18Eg98nIwdLF1w==?=
+Subject: Some Subject
+Date: Tue, 08 Dec 2015 22:50:21 +0500
+Content-Type: multipart/alternative;
+	boundary="--ALT--"
+
+----ALT--
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: base64
+
+SGVsbG8gV29ybGQ=
+----ALT--
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: Quoted-Printable
+
+=D0=9F=D1=80=D0=B8=D0=B2=D0=B5=D1=82 =D0=9C=D0=B8=D1=80
+----ALT--
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+
+Привет
+----ALT----
