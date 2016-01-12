@@ -1,0 +1,6 @@
+show 1
+show 2
+show 3
+show 4
+command long list
+quit
