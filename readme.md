@@ -64,4 +64,4 @@ Options
 -c CFG, --config CFG  Configuration file
 ```
 
-*&copy; Vikharev Slava CS-201*
+*&copy; Vikharev Slava CS-201 2015*
